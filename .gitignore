@@ -1,5 +1,5 @@
 # Ignore creds file
-auth/auth.yml
+#auth/auth.yml
 
 # Ignore orders
 order.json
@@ -20,7 +20,7 @@ __pycache__/
 auth/__pycache__/
 
 # Ignore config
-config.yml
+#config.yml
 
 # Ignore test file
 test_order.py
