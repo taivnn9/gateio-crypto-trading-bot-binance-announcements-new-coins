@@ -18,6 +18,7 @@ import sys, os
 globals.old_coins = load_old_coins()
 logger.debug(f"old_coins: {globals.old_coins}")
 
+
 # loads local configuration
 config = load_config('config.yml')
 
@@ -47,7 +48,7 @@ logger.debug("Starting get_all_currencies")
 supported_currencies = get_all_currencies(single=True)
 logger.debug("Finished get_all_currencies")
 
-logger.info("new-coin-bot online", extra={'TELEGRAM': 'STARTUP'})
+logger.info("Bot starting..", extra={'TELEGRAM': 'STARTUP'})
 
 
 def buy():
@@ -89,7 +90,7 @@ def buy():
                         session[announcement_coin].update({'total_fees': 0})
                         session[announcement_coin]['orders'] = list()
 
-                    # initalize order object
+                    # initialize order object
                     if announcement_coin not in order:
                         volume = globals.quantity - session[announcement_coin]['total_volume']
 
@@ -115,7 +116,7 @@ def buy():
                         amount = left
 
                     logger.info(
-                        f'starting buy place_order with : {announcement_coin=} | {globals.pairing=} | {volume=} | {amount=} x {price=} | side = buy | {status=}',
+                        f'Starting buy place_order with : {announcement_coin=} | {globals.pairing=} | {volume=} | {amount=} x {price=} | side = buy | {status=}',
                         extra={'TELEGRAM': 'BUY_START'})
 
 
@@ -418,6 +419,7 @@ def sell():
 
 
 def main():
+    # place_order('FLUX', 'USDT', 5 , 'buy', 1.6)
     """
     Sells, adjusts TP and SL according to trailing values
     and buys new coins
@@ -448,8 +450,8 @@ def main():
     t_get_currencies_thread.start()
     t_buy_thread = threading.Thread(target=buy)
     t_buy_thread.start()
-    t_sell_thread = threading.Thread(target=sell)
-    t_sell_thread.start()
+    # t_sell_thread = threading.Thread(target=sell)
+    # t_sell_thread.start()
 
     try:
         search_and_update()
@@ -460,7 +462,7 @@ def main():
         globals.sell_ready.set()
         t_get_currencies_thread.join()
         t_buy_thread.join()
-        t_sell_thread.join()
+        # t_sell_thread.join()
 
 
 if __name__ == '__main__':

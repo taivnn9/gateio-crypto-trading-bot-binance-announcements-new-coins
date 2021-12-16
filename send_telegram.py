@@ -1,15 +1,18 @@
 import requests
 import logging
 import yaml
+import os
 from load_config import *
 
 config = load_config('config.yml')
+os_deploy = os.environ['OS_DEPLOY']
 
 with open('auth/auth.yml') as file:
     try:
         creds = yaml.load(file, Loader=yaml.FullLoader)
-        bot_token = creds['telegram_token']
-        bot_chatID = str(creds['telegram_chat_id'])
+
+        bot_token = os.environ['TELEGRAM_TOKEN']
+        bot_chatID = str(os.environ['TELEGRAM_CHAT_ID'])
         valid_auth = True
     except KeyError:
         valid_auth = False
@@ -45,4 +48,6 @@ class TelegramHandler(logging.Handler):
             + '/sendMessage?chat_id='
             + bot_chatID
             + '&parse_mode=Markdown&text='
+            + os_deploy
+            + ' NOTICE: '
             + record.message)
