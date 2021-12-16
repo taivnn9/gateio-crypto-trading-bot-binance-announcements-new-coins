@@ -172,6 +172,9 @@ def buy():
 
                     except Exception as e:
                         logger.error(e)
+                        logger.info(
+                            f'Order exception: {e}',
+                            extra={'TELEGRAM': 'BUY_ORDER_CREATED'})
 
                     else:
                         order_status = order[announcement_coin]['_status']
