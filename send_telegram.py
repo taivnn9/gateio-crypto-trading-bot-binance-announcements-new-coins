@@ -3,6 +3,7 @@ import logging
 import yaml
 import os
 from load_config import *
+from datetime import datetime
 
 config = load_config('config.yml')
 os_deploy = os.environ['OS_DEPLOY']
@@ -41,7 +42,8 @@ class TelegramHandler(logging.Handler):
         # message key disabled
         if not config['TELEGRAM']['NOTIFICATIONS'][key]:
             return
-
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
         requests.get(
             'https://api.telegram.org/bot'
             + bot_token
@@ -49,5 +51,7 @@ class TelegramHandler(logging.Handler):
             + bot_chatID
             + '&parse_mode=Markdown&text='
             + os_deploy
-            + ' NOTICE: '
+            + ' at '
+            + current_time
+            + ': '
             + record.message)

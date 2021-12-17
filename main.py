@@ -66,6 +66,7 @@ def buy():
                 announcement_coin not in sold_coins and \
                 announcement_coin not in globals.old_coins:
 
+
             logger.info(
                 f'New announcement detected: {announcement_coin}',
                 extra={'TELEGRAM': 'COIN_ANNOUNCEMENT'})
@@ -169,11 +170,14 @@ def buy():
                             order[announcement_coin]['_ttp'] = globals.ttp
                             order[announcement_coin]['_tsl'] = globals.tsl
                             logger.debug('Finished buy place_order')
+                            logger.info(
+                                f'Finished buy place_order',
+                                extra={'TELEGRAM': 'BUY_ORDER_CREATED'})
 
                     except Exception as e:
                         logger.error(e)
                         logger.info(
-                            f'Order exception: {e}',
+                            f'Buy Order error, exception: {e}',
                             extra={'TELEGRAM': 'BUY_ORDER_CREATED'})
 
                     else:
