@@ -426,6 +426,16 @@ def sell():
 
 
 def main():
+    # trades = spot_api.list_trades(currency_pair=f'DOT_USDT', limit=1)
+    # assert len(trades) == 1
+    # trade = trades[0]
+    # create_time_ms = datetime.utcfromtimestamp(int(trade.create_time_ms.split('.')[0]) / 1000)
+    # create_time_formatted = create_time_ms.strftime('%d-%m-%y %H:%M:%S.%f')
+    #
+    # logger.info(f"LATEST TRADE: {trade.currency_pair} | id={trade.id} | create_time={create_time_formatted} | "
+    #             f"side={trade.side} | amount={trade.amount} | price={trade.price}",
+    #                         extra={'TELEGRAM':  'STARTUP'})
+
     # place_order('FLUX', 'USDT', 5 , 'buy', 1.6)
     """
     Sells, adjusts TP and SL according to trailing values
@@ -457,8 +467,9 @@ def main():
     t_get_currencies_thread.start()
     t_buy_thread = threading.Thread(target=buy)
     t_buy_thread.start()
-    # t_sell_thread = threading.Thread(target=sell)
-    # t_sell_thread.start()
+
+    t_sell_thread = threading.Thread(target=sell)
+    t_sell_thread.start()
 
     try:
         search_and_update()
@@ -469,7 +480,7 @@ def main():
         globals.sell_ready.set()
         t_get_currencies_thread.join()
         t_buy_thread.join()
-        # t_sell_thread.join()
+        t_sell_thread.join()
 
 
 if __name__ == '__main__':
