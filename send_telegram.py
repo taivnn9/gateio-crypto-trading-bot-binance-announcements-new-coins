@@ -51,7 +51,5 @@ class TelegramHandler(logging.Handler):
             + bot_chatID
             + '&parse_mode=Markdown&text='
             + os_deploy
-            + ' at '
-            + current_time
-            + ': '
+            + ' '
             + record.message)

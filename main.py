@@ -48,7 +48,7 @@ logger.debug("Starting get_all_currencies")
 supported_currencies = get_all_currencies(single=True)
 logger.debug("Finished get_all_currencies")
 
-logger.info("Bot starting..", extra={'TELEGRAM': 'STARTUP'})
+logger.info(f'{datetime.now().strftime("%H:%M:%S")} Bot starting..', extra={'TELEGRAM': 'STARTUP'})
 
 
 def buy():
@@ -66,20 +66,21 @@ def buy():
                 announcement_coin not in sold_coins and \
                 announcement_coin not in globals.old_coins:
 
-
-            logger.info(
-                f'New announcement detected: {announcement_coin}',
-                extra={'TELEGRAM': 'COIN_ANNOUNCEMENT'})
+            queue_message = [f'{datetime.now().strftime("%H:%M:%S")} New announcement detected: {announcement_coin}']
 
             if not supported_currencies:
                 supported_currencies = get_all_currencies(single=True)
             if supported_currencies:
                 if announcement_coin in supported_currencies:
-                    logger.debug("Starting get_last_price")
+                    queue_message.append(
+                        f'{datetime.now().strftime("%H:%M:%S")} Starting get_last_price')
 
                     # get latest price object
                     obj = get_last_price(announcement_coin, globals.pairing, False)
                     price = obj.price
+
+                    queue_message.append(
+                        f'{datetime.now().strftime("%H:%M:%S")} Latest price of {announcement_coin} is {price}')
 
                     if float(price) <= 0:
                         continue # wait for positive price
@@ -116,10 +117,8 @@ def buy():
                         # partial fill.
                         amount = left
 
-                    logger.info(
-                        f'Starting buy place_order with : {announcement_coin=} | {globals.pairing=} | {volume=} | {amount=} x {price=} | side = buy | {status=}',
-                        extra={'TELEGRAM': 'BUY_START'})
-
+                    queue_message.append(
+                        f'{datetime.now().strftime("%H:%M:%S")} Starting buy place_order with : {announcement_coin=} | {globals.pairing=} | {volume=} | {amount=} x {price=} | side = buy | {status=}')
 
                     try:
                         # Run a test trade if true
@@ -169,23 +168,21 @@ def buy():
                             order[announcement_coin]['_sl'] = globals.sl
                             order[announcement_coin]['_ttp'] = globals.ttp
                             order[announcement_coin]['_tsl'] = globals.tsl
-                            logger.debug('Finished buy place_order')
-                            logger.info(
-                                f'Finished buy place_order',
-                                extra={'TELEGRAM': 'BUY_ORDER_CREATED'})
+
+                            queue_message.append(
+                                f'{datetime.now().strftime("%H:%M:%S")} Finished order({announcement_coin} , {globals.pairing} , {volume} , {"buy"} , {price}')
 
                     except Exception as e:
                         logger.error(e)
-                        logger.info(
-                            f'Buy Order error, exception: {e}',
-                            extra={'TELEGRAM': 'BUY_ORDER_CREATED'})
+
+                        queue_message.append(
+                            f'{datetime.now().strftime("%H:%M:%S")} Buy order error, exception: {e}')
 
                     else:
                         order_status = order[announcement_coin]['_status']
 
-                        logger.info(
-                            f'Order created on {announcement_coin} at a price of {price} each.  {order_status=}',
-                            extra={'TELEGRAM': 'BUY_ORDER_CREATED'})
+                        queue_message.append(
+                            f'{datetime.now().strftime("%H:%M:%S")} Order created on {announcement_coin} at a price of {price} each.  {order_status=}')
 
                         if order_status == "closed":
                             order[announcement_coin]['_amount_filled'] = order[announcement_coin]['_amount']
@@ -208,9 +205,8 @@ def buy():
                             globals.sell_ready.set()
                             globals.buy_ready.clear()
 
-                            logger.info(
-                                f'Order on {announcement_coin} closed',
-                                extra={'TELEGRAM': 'BUY_FILLED'})
+                            queue_message.append(
+                                f'{datetime.now().strftime("%H:%M:%S")} Order on {announcement_coin} closed')
                         else:
                             if order_status == "cancelled" and float(order[announcement_coin]['_amount']) > float(order[announcement_coin]['_left']) and float(order[announcement_coin]['_left']) > 0:
                                 # partial order. Change qty and fee_total in order and finish any remaining balance
@@ -223,26 +219,36 @@ def buy():
 
                                 session[announcement_coin]['orders'].append(copy.deepcopy(order[announcement_coin]))
 
-                                logger.info(f"Partial fill order detected.  {order_status=} | {partial_amount=} out of {amount=} | {partial_fee=} | {price=}")
+                                queue_message.append(
+                                    f'{datetime.now().strftime("%H:%M:%S")} Partial fill order detected.  {order_status=} | {partial_amount=} out of {amount=} | {partial_fee=} | {price=}')
                                 # FUTURE: We'll probably want to start attempting to sell in the future immediately after ordering any amount
                                 # It would require at least a minor refactor, since order is getting cleared and
                                 # it seems that this function depends on order being empty, but sell() depends on order not being empty.
                                 # globals.sell_ready.set()
 
                             # order not filled, try again.
-                            logger.info(f"Clearing order with a status of {order_status}.  Waiting for 'closed' status")
+                            queue_message.append(
+                                f"{datetime.now().strftime('%H:%M:%S')} Clearing order with a status of {order_status}.  Waiting for 'closed' status")
+
                             order.pop(announcement_coin)  # reset for next iteration
                 else:
-                    logger.warning(
-                        f'{announcement_coin=} is not supported on gate io',
-                        extra={'TELEGRAM':  'COIN_NOT_SUPPORTED'})
-                    logger.info(f"Adding {announcement_coin} to old_coins.json")
+                    queue_message.append(
+                        f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin=} is not supported on gate io')
+                    queue_message.append(
+                        f'{datetime.now().strftime("%H:%M:%S")} Adding {announcement_coin} to old_coins.json')
                     globals.old_coins.append(announcement_coin)
                     store_old_coins(globals.old_coins)
             else:
-                logger.error('supported_currencies is not initialized')
+                queue_message.append(
+                    f'{datetime.now().strftime("%H:%M:%S")} Supported_currencies is not initialized')
+
+            # Sent telegram notice
+            for message in queue_message:
+                logger.info(f'{message}', extra={'TELEGRAM': 'COIN_ANNOUNCEMENT'})
+
         else:
-            logger.info( 'No coins announced, or coin has already been bought/sold. Checking more frequently in case TP and SL need updating')
+            logger.info( 'No coins announced, or coin has already been bought/sold. Checking more frequently in case '
+                         'TP and SL need updating')
         time.sleep(3)
 
 
@@ -324,14 +330,13 @@ def sell():
                         sell_volume_adjusted = float(volume) - fees
 
                         logger.info(
-                            f'starting sell place_order with :{symbol} | {globals.pairing} | {volume} | {sell_volume_adjusted} | {fees} | {float(sell_volume_adjusted)*float(last_price)} | side=sell | last={last_price}',
+                            f'Starting sell place_order with :{symbol} | {globals.pairing} | {volume} | {sell_volume_adjusted} | {fees} | {float(sell_volume_adjusted)*float(last_price)} | side=sell | last={last_price}',
                             extra={'TELEGRAM':  'SELL_START'})
 
                         # sell for real if test mode is set to false
                         if not globals.test_mode:
                             sell = place_order(symbol, globals.pairing, float(sell_volume_adjusted)*float(last_price), 'sell', last_price)
                             logger.info("Finish sell place_order")
-
 
                             #check for completed sell order
                             if sell._status != 'closed':
@@ -362,9 +367,8 @@ def sell():
                                 continue
                             
                         logger.info(
-                            f'sold {coin} with {round((float(last_price) - stored_price) * float(volume), 3)} profit | {round((float(last_price) - stored_price) / float(stored_price)*100, 3)}% PNL',
+                            f'Sold {coin} with {round((float(last_price) - stored_price) * float(volume), 3)} profit | {round((float(last_price) - stored_price) / float(stored_price)*100, 3)}% PNL',
                             extra={'TELEGRAM':  'SELL_FILLED'})
-
 
                         # remove order from json file
                         order.pop(coin)
@@ -426,17 +430,7 @@ def sell():
 
 
 def main():
-    # trades = spot_api.list_trades(currency_pair=f'DOT_USDT', limit=1)
-    # assert len(trades) == 1
-    # trade = trades[0]
-    # create_time_ms = datetime.utcfromtimestamp(int(trade.create_time_ms.split('.')[0]) / 1000)
-    # create_time_formatted = create_time_ms.strftime('%d-%m-%y %H:%M:%S.%f')
-    #
-    # logger.info(f"LATEST TRADE: {trade.currency_pair} | id={trade.id} | create_time={create_time_formatted} | "
-    #             f"side={trade.side} | amount={trade.amount} | price={trade.price}",
-    #                         extra={'TELEGRAM':  'STARTUP'})
 
-    # place_order('FLUX', 'USDT', 5 , 'buy', 1.6)
     """
     Sells, adjusts TP and SL according to trailing values
     and buys new coins
