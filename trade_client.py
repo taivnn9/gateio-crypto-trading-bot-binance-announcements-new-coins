@@ -1,4 +1,7 @@
 from datetime import datetime
+
+from gate_api.exceptions import GateApiException, ApiException
+
 from logger import logger
 
 from auth.gateio_auth import *
@@ -8,6 +11,23 @@ client = load_gateio_creds('auth/auth.yml')
 spot_api = SpotApi(ApiClient(client))
 
 last_trade = None
+
+
+def get_previous_price(currency_pair, limit, interval):
+    # currency_pair = 'BTC_USDT'  # str | Currency pair
+    # limit = 100  # int | Maximum recent data points to return. `limit` is conflicted with `from` and `to`. If either `from` or `to` is specified, request will be rejected. (optional) (default to 100)
+    # _from = 1546905600  # int | Start time of candlesticks, formatted in Unix timestamp in seconds. Default to`to - 100 * interval` if not specified (optional)
+    # to = 1546935600  # int | End time of candlesticks, formatted in Unix timestamp in seconds. Default to current time (optional)
+    # interval = '30m'  # str | Interval time between data points (optional) (default to '30m')
+
+    try:
+        # Market candlesticks
+        api_response = spot_api.list_candlesticks(currency_pair, limit=limit, interval=interval)
+        return api_response
+    except GateApiException as ex:
+        logger.error("Gate api exception, label: %s, message: %s\n" % (ex.label, ex.message))
+    except ApiException as e:
+        logger.error("Exception when calling SpotApi->list_candlesticks: %s\n" % e)
 
 
 def get_last_price(base, quote, return_price_only):
