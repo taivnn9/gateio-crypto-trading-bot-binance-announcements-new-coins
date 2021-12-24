@@ -55,34 +55,16 @@ def get_announcement():
     return latest_announcement['data']['catalogs'][0]['articles'][0]['title']
 
 
-def get_kucoin_announcement():
-    """
-    Retrieves new coin listing announcements from Kucoin
+def listToString(s):
+    # initialize an empty string
+    str1 = ""
 
-    """
-    logger.debug("Pulling announcement page")
-    # Generate random query/params to help prevent caching
-    rand_page_size = random.randint(1, 200)
-    letters = string.ascii_letters
-    random_string = ''.join(random.choice(letters) for i in range(random.randint(10, 20)))
-    random_number = random.randint(1, 99999999999999999999)
-    queries = ["page=1", f"pageSize={str(rand_page_size)}", "category=listing", "lang=en_US" , f"rnd={str(time.time())}",
-               f"{random_string}={str(random_number)}"]
-    random.shuffle(queries)
-    logger.debug(f"Queries: {queries}")
-    request_url = f"https://www.kucoin.com/_api/cms/articles?" \
-                  f"?{queries[0]}&{queries[1]}&{queries[2]}&{queries[3]}&{queries[4]}&{queries[5]}"
-    latest_announcement = requests.get(request_url)
-    try:
-        logger.debug(f'X-Cache: {latest_announcement.headers["X-Cache"]}')
-    except KeyError:
-        # No X-Cache header was found - great news, we're hitting the source.
-        pass
+    # traverse in the string
+    for ele in s:
+        str1 += " " + ele
 
-    latest_announcement = latest_announcement.json()
-    logger.debug("Finished pulling announcement page")
-    return latest_announcement['items'][0]['title']
-
+        # return string
+    return str1
 
 def get_last_coin():
     """
@@ -91,37 +73,14 @@ def get_last_coin():
     # scan Binance Announcement
     latest_announcement = get_announcement()
 
-    # enable Kucoin Announcements if True in config
-    if config['TRADE_OPTIONS']['KUCOIN_ANNOUNCEMENTS']:
-        logger.info('Kucoin announcements enabled, look for new Kucoin coins...')
-        kucoin_announcement = get_kucoin_announcement()
-        kucoin_coin = re.findall('\(([^)]+)', kucoin_announcement)
-
     found_coin = re.findall('\(([^)]+)', latest_announcement)
     uppers = None
 
-    # returns nothing if it's an old coin or it's not an actual coin listing
-    if 'Will List' not in latest_announcement or found_coin[0] == globals.latest_listing or \
-            found_coin[0] in previously_found_coins:
+    if len(found_coin) > 0:
+        uppers = found_coin[0]
+        previously_found_coins.add(uppers)
 
-        # if the latest Binance announcement is not a new coin listing, or the listing has already been returned, check kucoin
-        if config['TRADE_OPTIONS']['KUCOIN_ANNOUNCEMENTS'] and 'Gets Listed' in kucoin_announcement\
-        and kucoin_coin[0] != globals.latest_listing and kucoin_coin[0] not in previously_found_coins:
-            if len(kucoin_coin) == 1:
-                uppers = kucoin_coin[0]
-                previously_found_coins.add(uppers)
-                logger.info('New Kucoin coin detected: ' + uppers)
-            if len(kucoin_coin) != 1:
-                uppers = None
-
-    else:
-        if len(found_coin) == 1:
-            uppers = found_coin[0]
-            previously_found_coins.add(uppers)
-            logger.info('New coin detected: ' + uppers)
-        if len(found_coin) != 1:
-            uppers = None
-    print(f'{uppers=}')
+    # logger.info('New coin detected: ' + listToString(found_coin))
 
     return uppers
 
@@ -131,7 +90,7 @@ def store_new_listing(listing):
     Only store a new listing if different from existing value
     """
     if listing and not listing == globals.latest_listing:
-        logger.info("New listing detected")
+        logger.info(f"New listing detected {listing}")
         globals.latest_listing = listing
         globals.buy_ready.set()
 
@@ -150,12 +109,8 @@ def search_and_update():
             latest_coin = get_last_coin()
             if latest_coin:
                 store_new_listing(latest_coin)
-            elif globals.test_mode and os.path.isfile('test_new_listing.json'):
-                store_new_listing(load_order('test_new_listing.json'))
-                if os.path.isfile('test_new_listing.json.used'):
-                    os.remove('test_new_listing.json.used')
-                os.rename('test_new_listing.json', 'test_new_listing.json.used')
-            logger.info(f"Checking for coin announcements every {str(sleep_time)} seconds (in a separate thread)")
+            # logger.info(f"Checking for coin announcements every {str(sleep_time)} seconds (in a separate thread)")
+
         except Exception as e:
             logger.info(e)
     else:

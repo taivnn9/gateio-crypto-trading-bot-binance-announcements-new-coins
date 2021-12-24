@@ -48,6 +48,9 @@ logger.debug("Finished get_all_currencies")
 
 logger.info(f'{datetime.now().strftime("%H:%M:%S")} Bot starting..', extra={'TELEGRAM': 'STARTUP'})
 
+def sentMessage(queue_message):
+    for message in queue_message:
+        logger.info(f'{message}', extra={'TELEGRAM': 'COIN_ANNOUNCEMENT'})
 
 def buy():
     while not globals.stop_threads:
@@ -57,56 +60,61 @@ def buy():
         if globals.stop_threads:
             break
         announcement_coin = globals.latest_listing
-
+        queue_message = [f'{datetime.now().strftime("%H:%M:%S")} New announcement detected: {announcement_coin}']
         global supported_currencies
         if announcement_coin and \
                 announcement_coin not in order and \
                 announcement_coin not in sold_coins and \
                 announcement_coin not in globals.old_coins:
 
-            queue_message = [f'{datetime.now().strftime("%H:%M:%S")} New announcement detected: {announcement_coin}']
-
             if not supported_currencies:
                 supported_currencies = get_all_currencies(single=True)
             if supported_currencies:
                 if announcement_coin in supported_currencies:
-                    queue_message.append(
-                        f'{datetime.now().strftime("%H:%M:%S")} Starting get_last_price')
+                    # queue_message.append(
+                    #     f'{datetime.now().strftime("%H:%M:%S")} Starting get_last_price')
 
                     # get latest price object
                     obj = get_last_price(announcement_coin, globals.pairing, False)
                     price = obj.price
 
                     queue_message.append(
-                        f'{datetime.now().strftime("%H:%M:%S")} Latest price of {announcement_coin} is {price}')
+                        f'{datetime.now().strftime("%H:%M:%S")} Latest price {announcement_coin} is {price}')
 
                     if float(price) <= 0:
                         continue  # wait for positive price
 
                     # TODO
                     # check current price is pump with 1 minute ago
-                    last_1_minute_price = get_previous_price(f'{announcement_coin}_{globals.pairing}', 2, '1m')
+                    one_minute_price = get_previous_price(f'{announcement_coin}_{globals.pairing}', 2, '1m')
 
                     queue_message.append(
-                        f'{datetime.now().strftime("%H:%M:%S")} One minute ago BTC USDT Highest price: {last_1_minute_price[0][3]} Open price: {last_1_minute_price[0][5]} Lowest price :{last_1_minute_price[0][4]} '
-                        f'Closed price {last_1_minute_price[0][2]}')
+                        f'{datetime.now().strftime("%H:%M:%S")} Highest price {announcement_coin} is {one_minute_price[0][3]}')
 
-                    # logger.info(
-                    #     f'TEST: One minute ago BTC USDT Highest price: {last_1_minute_price[0][3]}
-                    #     Open price: {last_1_minute_price[0][5]} Lowest price :{last_1_minute_price[0][4]} '
-                    #     f'Closed price {last_1_minute_price[0][2]}',
-                    #     extra={'TELEGRAM': 'SELL_FILLED'})
+                    # queue_message.append(
+                    #     f'{datetime.now().strftime("%H:%M:%S")} Lowest {announcement_coin} is {price}')
+                    #
+                    # queue_message.append(
+                    #     f'{datetime.now().strftime("%H:%M:%S")} Closed {announcement_coin} is {price}')
+                    #
+                    # queue_message.append(
+                    #     f'{datetime.now().strftime("%H:%M:%S")} '
+                    #     f'{announcement_coin}_{globals.pairing} | '
+                    #     f'Highest: {one_minute_price[0][3]} | '
+                    #     f'Open: {one_minute_price[0][5]} | '
+                    #     f'Lowest:{one_minute_price[0][4]} | '
+                    #     f'Closed: {one_minute_price[0][2]}')
 
-                    previous_price = last_1_minute_price[0][3]
+                    previous_price = one_minute_price[0][3]
                     pump_warning_price = float(price) + (float(price) * 30 / 100)
 
-                    if pump_warning_price >= previous_price:
+                    if float(previous_price) >= pump_warning_price:
                         queue_message.append(
                             f'{datetime.now().strftime("%H:%M:%S")} Current price has been pump over {30}%. '
                             f'Previous price:{previous_price} '
                             f' Current price {float(price)}')
-                        continue
-
+                        sentMessage(queue_message)
+                        break
 
                     if announcement_coin not in session:
                         session[announcement_coin] = {}
@@ -145,42 +153,7 @@ def buy():
 
                     try:
                         # Run a test trade if true
-                        if globals.test_mode:
-                            if order[announcement_coin]['_status'] == 'cancelled':
-                                status = 'closed'
-                                left = 0
-                                fee = f'{float(amount) * .002}'
-                            else:
-                                status = 'cancelled'
-                                left = f'{amount * .66}'
-                                fee = f'{float(amount - float(left)) * .002}'
-
-                            order[announcement_coin] = {
-                                '_fee_currency': announcement_coin,
-                                '_price': f'{price}',
-                                '_amount': f'{amount}',
-                                '_time': datetime.timestamp(datetime.now()),
-                                '_tp': globals.tp,
-                                '_sl': globals.sl,
-                                '_ttp': globals.ttp,
-                                '_tsl': globals.tsl,
-                                '_id': 'test-order',
-                                '_text': 'test-order',
-                                '_create_time': datetime.timestamp(datetime.now()),
-                                '_update_time': datetime.timestamp(datetime.now()),
-                                '_currency_pair': f'{announcement_coin}_{globals.pairing}',
-                                '_status': status,
-                                '_type': 'limit',
-                                '_account': 'spot',
-                                '_side': 'buy',
-                                '_iceberg': '0',
-                                '_left': f'{left}',
-                                '_fee': fee
-                            }
-                            logger.info('PLACING TEST ORDER')
-                            logger.info(order[announcement_coin])
-                        # place a live order if False
-                        else:
+                        if not globals.test_mode:
                             # just in case...stop buying more than our config amount
                             assert amount * float(price) <= float(volume)
 
@@ -211,8 +184,8 @@ def buy():
                         if order_status == "closed":
                             order[announcement_coin]['_amount_filled'] = order[announcement_coin]['_amount']
                             session[announcement_coin]['total_volume'] += (
-                                        float(order[announcement_coin]['_amount']) * float(
-                                    order[announcement_coin]['_price']))
+                                    float(order[announcement_coin]['_amount']) * float(
+                                order[announcement_coin]['_price']))
                             session[announcement_coin]['total_amount'] += float(order[announcement_coin]['_amount'])
                             session[announcement_coin]['total_fees'] += float(order[announcement_coin]['_fee'])
                             session[announcement_coin]['orders'].append(copy.deepcopy(order[announcement_coin]))
@@ -242,7 +215,7 @@ def buy():
                                 partial_fee = float(order[announcement_coin]['_fee'])
                                 order[announcement_coin]['_amount_filled'] = f'{partial_amount}'
                                 session[announcement_coin]['total_volume'] += (
-                                            partial_amount * float(order[announcement_coin]['_price']))
+                                        partial_amount * float(order[announcement_coin]['_price']))
                                 session[announcement_coin]['total_amount'] += partial_amount
                                 session[announcement_coin]['total_fees'] += partial_fee
 
@@ -270,14 +243,14 @@ def buy():
             else:
                 queue_message.append(
                     f'{datetime.now().strftime("%H:%M:%S")} Supported_currencies is not initialized')
-
-            # Sent telegram notice
-            for message in queue_message:
-                logger.info(f'{message}', extra={'TELEGRAM': 'COIN_ANNOUNCEMENT'})
-
         else:
-            logger.info('No coins announced, or coin has already been bought/sold. Checking more frequently in case '
-                        'TP and SL need updating')
+            queue_message.append(
+                'This coin is in order, or coin has already been bought/sold. Checking more frequently in case '
+                'TP and SL need updating')
+
+        # Sent telegram notice
+        sentMessage(queue_message)
+
         time.sleep(3)
 
 
