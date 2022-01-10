@@ -179,7 +179,7 @@ def buy():
                         order_status = order[announcement_coin]['_status']
 
                         queue_message.append(
-                            f'{datetime.now().strftime("%H:%M:%S")} Order created on {announcement_coin} at a price of {price} each.  {order_status=}')
+                            f'{datetime.now().strftime("%H:%M:%S")} Order created on {announcement_coin} at a price of {price} each. With status: {order_status=}')
 
                         if order_status == "closed":
                             order[announcement_coin]['_amount_filled'] = order[announcement_coin]['_amount']
@@ -230,7 +230,7 @@ def buy():
 
                             # order not filled, try again.
                             queue_message.append(
-                                f"{datetime.now().strftime('%H:%M:%S')} Clearing order with a status of {order_status}.  Waiting for 'closed' status")
+                                f"{datetime.now().strftime('%H:%M:%S')} Order not filled, trying again")
 
                             order.pop(announcement_coin)  # reset for next iteration
                 else:
