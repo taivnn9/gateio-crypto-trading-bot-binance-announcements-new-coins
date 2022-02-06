@@ -65,6 +65,7 @@ def get_min_amount(base, quote):
     try:
         min_amount = spot_api.get_currency_pair(currency_pair=f'{base}_{quote}').min_quote_amount
     except Exception as e:
+        logger.info('get_min_amount Exception')
         logger.error(e)
     else:
         return min_amount
@@ -85,6 +86,7 @@ def place_order(base, quote, amount, side, last_price):
             f"amount={t.amount} | price={t.price} | left={t.left} | filled_total={t.filled_total} | "
             f"fill_price={t.fill_price} | fee={t.fee} {t.fee_currency}")
     except Exception as e:
+        logger.info('place_order Exception')
         logger.error(e)
         raise
 

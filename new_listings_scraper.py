@@ -115,6 +115,7 @@ def search_and_update():
                 logger.info(f"Checking for coin announcements every {str(sleep_time)} seconds (in a separate thread)")
                 minute = 0
         except Exception as e:
+            logger.info('search_and_update Exception')
             logger.info(e)
     else:
         logger.info("while loop in search_and_update() has stopped.")

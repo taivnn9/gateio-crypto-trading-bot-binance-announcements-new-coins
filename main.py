@@ -171,6 +171,7 @@ def buy():
                                     f'{datetime.now().strftime("%H:%M:%S")} Finished order({announcement_coin} , {globals.pairing} , {volume} , {"buy"} , {price}')
 
                         except Exception as e:
+                            logger.info('Main.py line 174 Exception')
                             logger.error(e)
 
                             queue_message.append(
@@ -249,6 +250,7 @@ def buy():
                     f'{datetime.now().strftime("%H:%M:%S")} Coin in order/ bought/sold.'
                     'TP and SL need updating')
         except Exception as e:
+            logger.info('Main.py line 252 Exception')
             queue_message.append(str(e))
         # Sent telegram notice
         sentMessage(queue_message)
@@ -368,6 +370,7 @@ def sell():
                                             dp = copy.deepcopy(sold_coins[id])
                                             session[coin]['orders'].append(dp)
                                     except Exception as e:
+                                        logger.info('Main.py line 371 Exception')
                                         print(e)
                                     pass
 
@@ -385,6 +388,7 @@ def sell():
                         globals.sell_ready.clear()
 
                     except Exception as e:
+                        logger.info('Main.py line 388 Exception')
                         logger.error(e)
 
                     # store sold trades data
@@ -427,6 +431,7 @@ def sell():
                                 store_order('session.json', session)
                                 logger.debug('Session saved in session.json')
                         except Exception as e:
+                            logger.info('add to session orders Exception')
                             print(e)
                             pass
 
