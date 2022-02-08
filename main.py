@@ -160,9 +160,7 @@ def buy():
 
                             if order_status == "closed":
                                 order[announcement_coin]['_amount_filled'] = order[announcement_coin]['_amount']
-                                session[announcement_coin]['total_volume'] += (
-                                            float(order[announcement_coin]['_amount']) * float(
-                                        order[announcement_coin]['_price']))
+                                session[announcement_coin]['total_volume'] += (float(order[announcement_coin]['_amount']) * float(order[announcement_coin]['_price']))
                                 session[announcement_coin]['total_amount'] += float(order[announcement_coin]['_amount'])
                                 session[announcement_coin]['total_fees'] += float(order[announcement_coin]['_fee'])
                                 session[announcement_coin]['orders'].append(copy.deepcopy(order[announcement_coin]))
@@ -185,9 +183,9 @@ def buy():
                                     f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
                                     f'Order completed')
                             else:
-                                if order_status == "cancelled" and float(order[announcement_coin]['_amount']) > float(
-                                        order[announcement_coin]['_left']) and float(
-                                        order[announcement_coin]['_left']) > 0:
+                                if order_status == "cancelled" \
+                                        and float(order[announcement_coin]['_amount']) > \
+                                        float(order[announcement_coin]['_left']) > 0:
                                     # partial order. Change qty and fee_total in order and finish any remaining balance
                                     partial_amount = float(order[announcement_coin]['_amount']) - float(
                                         order[announcement_coin]['_left'])
