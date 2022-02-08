@@ -49,7 +49,7 @@ logger.debug("Finished get_all_currencies")
 logger.info(f'{datetime.now().strftime("%H:%M:%S")} Bot starting..', extra={'TELEGRAM': 'STARTUP'})
 
 
-def sentMessage(queue_message):
+def sent_message(queue_message):
     for message in queue_message:
         logger.info(f'{message}', extra={'TELEGRAM': 'COIN_ANNOUNCEMENT'})
 
@@ -100,7 +100,7 @@ def buy():
                             queue_message.append(
                                 f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
                                 f'Current price pump over {30}%, breaking session')
-                            sentMessage(queue_message)
+                            sent_message(queue_message)
                             break
 
                         if announcement_coin not in session:
@@ -227,7 +227,7 @@ def buy():
             logger.info('Main.py line 252 Exception')
             queue_message.append(str(e))
         # Sent telegram notice
-        sentMessage(queue_message)
+        sent_message(queue_message)
 
         time.sleep(3)
 
