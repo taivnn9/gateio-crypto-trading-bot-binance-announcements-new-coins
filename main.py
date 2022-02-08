@@ -449,9 +449,9 @@ def main():
     """
 
     # Protection from stale announcement
-    # latest_coin = get_last_coin()
-    # if latest_coin:
-    #     globals.latest_listing = latest_coin
+    latest_coin = get_last_coin()
+    if latest_coin:
+        globals.latest_listing = latest_coin
 
     # store config deets
     globals.quantity = config['TRADE_OPTIONS']['QUANTITY']
