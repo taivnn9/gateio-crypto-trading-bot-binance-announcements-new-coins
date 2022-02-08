@@ -8,15 +8,15 @@
     # Test mode. No real money will be used.
     TEST: False
     # Stop Loss in % of your buy value.
-    SL: -3
+    SL: -30
     # Take Profit in % of your buy value.
-    TP: 33
+    TP: 30
     # DO NOT DISABLE TSL!!!! YOUR BOT WILL NOT SELL
     ENABLE_TSL: True
     # Trailing Stop Loss
-    TSL: -4
+    TSL: -33
     # Trailing Take Profit
-    TTP: 30
+    TTP: 33
   LOGGING:
     # Logging levels used in this program are ERROR, INFO, and DEBUG
     LOG_LEVEL: INFO
