@@ -89,8 +89,8 @@ def buy():
                         # check current price is pump with 1 minute ago
                         one_minute_price = get_previous_price(f'{announcement_coin}_{globals.pairing}', 2, '1m')
 
-                        queue_message.append(
-                            f'{datetime.now().strftime("%H:%M:%S")} Highest price {announcement_coin} is {one_minute_price[0][3]}')
+                        # queue_message.append(
+                        #     f'{datetime.now().strftime("%H:%M:%S")} Highest price {announcement_coin} is {one_minute_price[0][3]}')
 
                         # queue_message.append(
                         #     f'{datetime.now().strftime("%H:%M:%S")} Lowest {announcement_coin} is {price}')
@@ -98,13 +98,13 @@ def buy():
                         # queue_message.append(
                         #     f'{datetime.now().strftime("%H:%M:%S")} Closed {announcement_coin} is {price}')
                         #
-                        # queue_message.append(
-                        #     f'{datetime.now().strftime("%H:%M:%S")} '
-                        #     f'{announcement_coin}_{globals.pairing} | '
-                        #     f'Highest: {one_minute_price[0][3]} | '
-                        #     f'Open: {one_minute_price[0][5]} | '
-                        #     f'Lowest:{one_minute_price[0][4]} | '
-                        #     f'Closed: {one_minute_price[0][2]}')
+                        queue_message.append(
+                            f'{datetime.now().strftime("%H:%M:%S")} '
+                            f'{announcement_coin}_{globals.pairing} | '
+                            f'Highest: {one_minute_price[0][3]} | '
+                            f'Open: {one_minute_price[0][5]} | '
+                            f'Lowest:{one_minute_price[0][4]} | '
+                            f'Closed: {one_minute_price[0][2]}')
 
                         previous_price = one_minute_price[0][3]
                         pump_warning_price = float(price) + (float(price) * 30 / 100)
@@ -150,10 +150,10 @@ def buy():
                             amount = left
 
                         queue_message.append(
-                            f'{datetime.now().strftime("%H:%M:%S")} Starting buy place_order with : {announcement_coin=} | {globals.pairing=} | {volume=} | {amount=} x {price=} | side = buy | {status=}')
+                            f'{datetime.now().strftime("%H:%M:%S")} Starting buy place_order with : {announcement_coin=}'
+                            f'| {globals.pairing=} | {volume=} | {amount=} x {price=} | side = buy | {status=}')
 
                         try:
-                            # Run a test trade if true
                             if not globals.test_mode:
                                 # just in case...stop buying more than our config amount
                                 assert amount * float(price) <= float(volume)
@@ -173,7 +173,6 @@ def buy():
                         except Exception as e:
                             logger.info('Main.py line 174 Exception')
                             logger.error(e)
-
                             queue_message.append(
                                 f'{datetime.now().strftime("%H:%M:%S")} Buy order error, exception: {e}')
 
@@ -246,9 +245,10 @@ def buy():
                     queue_message.append(
                         f'{datetime.now().strftime("%H:%M:%S")} Supported_currencies is not initialized')
             else:
-                queue_message.append(
-                    f'{datetime.now().strftime("%H:%M:%S")} Coin in order/ bought/sold.'
-                    'TP and SL need updating')
+                logger.info('order: {0} , sold_coins: {1}, globals.old_coins {2}'.format(announcement_coin in order,
+                                                         announcement_coin in sold_coins,
+                                                         announcement_coin in globals.old_coins
+                                                         ))
         except Exception as e:
             logger.info('Main.py line 252 Exception')
             queue_message.append(str(e))
