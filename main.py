@@ -63,13 +63,14 @@ def buy():
             break
         try:
             announcement_coin = globals.latest_listing
-            queue_message = [f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
-                             f'New announcement detected']
+            queue_message = []
             global supported_currencies
             if announcement_coin and \
                     announcement_coin not in order and \
                     announcement_coin not in sold_coins and \
                     announcement_coin not in globals.old_coins:
+                queue_message.append(f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} '
+                                     f'- New announcement detected')
                 if not supported_currencies:
                     supported_currencies = get_all_currencies(single=True)
                 if supported_currencies:
@@ -219,8 +220,8 @@ def buy():
                         f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
                         f'Supported currencies undefined')
             else:
-                logger.info(f'order: {announcement_coin in order} | sold_coins: {announcement_coin in sold_coins}'
-                            f' | globals.old_coins {announcement_coin in globals.old_coins}')
+                logger.info(f'Ignore coin. Reason: In order: {announcement_coin in order} | In sold_coins: {announcement_coin in sold_coins}'
+                            f' | In globals old_coins {announcement_coin in globals.old_coins}')
         except Exception as e:
             logger.info('Main.py line 252 Exception')
             queue_message.append(str(e))
