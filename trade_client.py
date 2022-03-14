@@ -71,13 +71,13 @@ def get_min_amount(base, quote):
         return min_amount
 
 
-def place_order(base, quote, amount, side, last_price):
+def place_order(base, quote, volume, side, price):
     """
     Args:
-    'DOT', 'USDT', 50, 'buy', 400
+    'DOT', 'USDT', 4000$, 'buy', 400$
     """
     try:
-        order = Order(amount=str(float(amount) / float(last_price)), price=last_price, side=side,
+        order = Order(amount=str(float(volume) / float(price)), price=price, side=side,
                       currency_pair=f'{base}_{quote}', time_in_force='ioc')
         order = spot_api.create_order(order)
         t = order

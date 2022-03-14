@@ -90,7 +90,7 @@ def store_new_listing(listing):
     Only store a new listing if different from existing value
     """
     if listing and not listing == globals.latest_listing:
-        logger.info(f"New listing detected {listing}")
+        logger.info(f"Detect được coin mới {listing}")
         globals.latest_listing = listing
         globals.buy_ready.set()
 
@@ -112,7 +112,7 @@ def search_and_update():
             if latest_coin:
                 store_new_listing(latest_coin)
             if minute == 60:
-                logger.info(f"Checking for coin announcements every {str(sleep_time)} seconds (in a separate thread)")
+                logger.info(f"Kiểm tra thông báo list sàn của binance.  {str(sleep_time)} giây 1 lần (ở các thread độc lập)")
                 minute = 0
         except Exception as e:
             logger.info('search_and_update Exception')
@@ -128,13 +128,13 @@ def get_all_currencies(single=False):
     """
     global supported_currencies
     while not globals.stop_threads:
-        logger.info("Getting the list of supported currencies from gate io")
+        logger.info("Lấy danh sách coin listed gate.io.. ")
         all_currencies = ast.literal_eval(str(spot_api.list_currencies()))
         currency_list = [currency['currency'] for currency in all_currencies]
         with open('currencies.json', 'w') as f:
             json.dump(currency_list, f, indent=4)
-            logger.info("List of gate io currencies saved to currencies.json. Waiting 5 "
-                        "minutes before refreshing list...")
+            logger.info("Đã lưu danh sách vào file currencies.json.")
+            logger.info("Cập nhật danh sách 5 phút 1 lần.")
         supported_currencies = currency_list
         if single:
             return supported_currencies
@@ -144,14 +144,14 @@ def get_all_currencies(single=False):
                 if globals.stop_threads:
                     break
     else:
-        logger.info("while loop in get_all_currencies() has stopped.")
+        logger.info("Đã dừng cập nhật danh sách coin list sàn gate.io.. ")
 
 
 def load_old_coins():
     if os.path.isfile('old_coins.json'):
         with open('old_coins.json') as json_file:
             data = json.load(json_file)
-            logger.debug("Loaded old_coins from file")
+            logger.debug("Đã lấy danh sách old_coins.json.")
             return data
     else:
         return []
@@ -160,4 +160,4 @@ def load_old_coins():
 def store_old_coins(old_coin_list):
     with open('old_coins.json', 'w') as f:
         json.dump(old_coin_list, f, indent=2)
-        logger.debug('Wrote old_coins to file')
+        logger.debug('Đã lưu old_coin_list vào old_coins.json.')

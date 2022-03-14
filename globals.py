@@ -7,6 +7,7 @@ old_coins = {}
 latest_listing = ""
 
 #TRADE_OPTIONS config values
+max_volume = 95
 quantity = 15
 pairing = "USDT"
 test_mode = True

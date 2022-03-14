@@ -77,12 +77,12 @@ def buy():
                     if announcement_coin in supported_currencies:
                         # get latest price object
                         obj = get_last_price(announcement_coin, globals.pairing, False)
-                        price = obj.price
+                        current_price = obj.price
 
                         # get price 1 minute ago
                         one_minute_price = get_previous_price(f'{announcement_coin}_{globals.pairing}', 2, '1m')
                         previous_price = one_minute_price[0][3]
-                        pump_warning_price = float(price) + (float(price) * 30 / 100)
+                        pump_warning_price = float(current_price) + (float(current_price) * 30 / 100)
 
                         queue_message.append(
                             f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
@@ -90,10 +90,10 @@ def buy():
 
                         queue_message.append(
                             f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
-                            f'Current price {price}')
+                            f'Current price {current_price}')
 
                         # wait for positive price
-                        if float(price) <= 0:
+                        if float(current_price) <= 0:
                             continue
 
                         # check current price is pump with 1 minute ago
@@ -113,11 +113,13 @@ def buy():
 
                         # initialize order object
                         if announcement_coin not in order:
-                            volume = globals.quantity - session[announcement_coin]['total_volume']
+                            # volume = globals.quantity - session[announcement_coin]['total_volume']
 
                             order[announcement_coin] = {}
-                            order[announcement_coin]['_amount'] = f'{volume / float(price)}'
-                            order[announcement_coin]['_left'] = f'{volume / float(price)}'
+                            # order[announcement_coin]['_amount'] = f'{volume / float(price)}'
+                            # order[announcement_coin]['_left'] = f'{volume / float(price)}'
+                            order[announcement_coin]['_amount'] = f'{globals.max_volume / float(current_price)}'
+                            order[announcement_coin]['_left'] = f'{globals.max_volume / float(current_price)}'
                             order[announcement_coin]['_fee'] = f'{0}'
                             order[announcement_coin]['_tp'] = f'{0}'
                             order[announcement_coin]['_sl'] = f'{0}'
@@ -128,28 +130,33 @@ def buy():
                                 else:
                                     order[announcement_coin]['_status'] = 'cancelled'
 
-                        amount = float(order[announcement_coin]['_amount'])
-                        left = float(order[announcement_coin]['_left'])
-                        status = order[announcement_coin]['_status']
+                        # amount = float(order[announcement_coin]['_amount'])
+                        # previous_amount = float(order[announcement_coin]['_left'])
 
                         # partial fill.
-                        if left - amount != 0:
-                            amount = left
+                        # if previous_amount - amount != 0:
+                        #     amount = previous_amount
                         try:
                             if not globals.test_mode:
                                 # just in case...stop buying more than our config amount
-                                assert amount * float(price) <= float(volume)
-                                order[announcement_coin] = place_order(announcement_coin, globals.pairing, volume,
-                                                                       'buy', price)
+                                # assert amount * float(price) <= float(volume)
+
+                                # Tăng giá mua lên 10% để khớp đc order
+                                current_price += (current_price * 0.1)
+
+                                queue_message.append(
+                                    f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
+                                    f'Place order | pairing={globals.pairing} | '
+                                    f'volume={globals.max_volume} | price={current_price} ')
+
+                                order[announcement_coin] = place_order(announcement_coin, globals.pairing,
+                                                                       globals.max_volume, 'buy', current_price)
                                 order[announcement_coin] = order[announcement_coin].__dict__
                                 order[announcement_coin].pop("local_vars_configuration")
                                 order[announcement_coin]['_tp'] = globals.tp
                                 order[announcement_coin]['_sl'] = globals.sl
                                 order[announcement_coin]['_ttp'] = globals.ttp
                                 order[announcement_coin]['_tsl'] = globals.tsl
-                                queue_message.append(
-                                    f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
-                                    f'Place by order {globals.pairing} | volume={volume} | price={price} ')
 
                         except Exception as e:
                             logger.info('Main.py line 154 Exception')
@@ -157,6 +164,7 @@ def buy():
                                 f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
                                 f'Place order exception {e}')
                         else:
+                            # If order not exception and created
                             order_status = order[announcement_coin]['_status']
 
                             if order_status == "closed":
@@ -422,11 +430,13 @@ def main():
     """
 
     # Protection from stale announcement
+    # Kiểm tra coin đã list sàn
     latest_coin = get_last_coin()
     if latest_coin:
         globals.latest_listing = latest_coin
 
     # store config deets
+    globals.max_volume = config['TRADE_OPTIONS']['MAX_VOLUME']
     globals.quantity = config['TRADE_OPTIONS']['QUANTITY']
     globals.tp = config['TRADE_OPTIONS']['TP']
     globals.sl = config['TRADE_OPTIONS']['SL']
@@ -444,6 +454,7 @@ def main():
 
     t_get_currencies_thread = threading.Thread(target=get_all_currencies)
     t_get_currencies_thread.start()
+
     t_buy_thread = threading.Thread(target=buy)
     t_buy_thread.start()
 
