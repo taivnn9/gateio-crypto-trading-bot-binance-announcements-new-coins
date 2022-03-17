@@ -52,6 +52,7 @@ def get_announcement():
 
     latest_announcement = latest_announcement.json()
     logger.debug("Finished pulling announcement page")
+    logger.info(f"Kiểm tra thông báo list sàn của binance. {latest_announcement['code']}")
     return latest_announcement['data']['catalogs'][0]['articles'][0]['title']
 
 
@@ -115,8 +116,8 @@ def search_and_update():
                 logger.info(f"Kiểm tra thông báo list sàn của binance.  {str(sleep_time)} giây 1 lần (ở các thread độc lập)")
                 minute = 0
         except Exception as e:
-            logger.info('search_and_update Exception')
-            logger.info(e)
+            logger.info(f'Kiểm tra thông báo list sàn của binance lỗi: {e}')
+            # logger.info(e)
     else:
         logger.info("while loop in search_and_update() has stopped.")
 
@@ -133,8 +134,7 @@ def get_all_currencies(single=False):
         currency_list = [currency['currency'] for currency in all_currencies]
         with open('currencies.json', 'w') as f:
             json.dump(currency_list, f, indent=4)
-            logger.info("Đã lưu danh sách vào file currencies.json.")
-            logger.info("Cập nhật danh sách 5 phút 1 lần.")
+            logger.info("Đã lưu danh sách coin listed vào file currencies.json. (Cập nhật danh sách 5 phút 1 lần.)")
         supported_currencies = currency_list
         if single:
             return supported_currencies
