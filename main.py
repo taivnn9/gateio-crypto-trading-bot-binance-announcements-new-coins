@@ -142,15 +142,15 @@ def buy():
                                 # assert amount * float(price) <= float(volume)
 
                                 # Tăng giá mua lên 10% để khớp đc order
-                                current_price += (current_price * 0.1)
+                                buy_price = (float(current_price) * 0.1)
 
                                 queue_message.append(
                                     f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
                                     f'Place order | pairing={globals.pairing} | '
-                                    f'volume={globals.max_volume} | price={current_price} ')
+                                    f'volume={globals.max_volume} | price={buy_price} ')
 
                                 order[announcement_coin] = place_order(announcement_coin, globals.pairing,
-                                                                       globals.max_volume, 'buy', current_price)
+                                                                       globals.max_volume, 'buy', buy_price)
                                 order[announcement_coin] = order[announcement_coin].__dict__
                                 order[announcement_coin].pop("local_vars_configuration")
                                 order[announcement_coin]['_tp'] = globals.tp
