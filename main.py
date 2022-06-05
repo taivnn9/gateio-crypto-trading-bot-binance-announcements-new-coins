@@ -46,7 +46,7 @@ logger.debug("Starting get_all_currencies")
 supported_currencies = get_all_currencies(single=True)
 logger.debug("Finished get_all_currencies")
 
-logger.info(f'{datetime.now().strftime("%H:%M:%S")} Bot starting..', extra={'TELEGRAM': 'STARTUP'})
+logger.info(f'{datetime.now().strftime("%H:%M:%S")} Bot starting', extra={'TELEGRAM': 'STARTUP'})
 
 
 def sent_message(queue_message):
@@ -59,6 +59,7 @@ def buy():
         logger.debug('Waiting for buy_ready event')
         globals.buy_ready.wait()
         logger.debug('buy_ready event triggered')
+
         if globals.stop_threads:
             break
         try:
@@ -74,16 +75,16 @@ def buy():
                 if not supported_currencies:
                     supported_currencies = get_all_currencies(single=True)
                 if supported_currencies:
+                    # TODO hard condition
+                    # if announcement_coin in supported_currencies or True:
                     if announcement_coin in supported_currencies:
+
                         # get latest price object
                         obj = get_last_price(announcement_coin, globals.pairing, False)
-                        current_price = obj.price
+                        current_price = float(obj.price)
 
                         # get price 1 minute ago
                         one_minute_price = get_previous_price(f'{announcement_coin}_{globals.pairing}', 2, '1m')
-                        previous_price = one_minute_price[0][3]
-                        pump_warning_price = float(current_price) + (float(current_price) * 30 / 100)
-
                         queue_message.append(
                             f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
                             f'Previous price {one_minute_price[0][3]}')
@@ -93,14 +94,15 @@ def buy():
                             f'Current price {current_price}')
 
                         # wait for positive price
-                        if float(current_price) <= 0:
+                        if current_price <= 0:
                             continue
 
-                        # check current price is pump with 1 minute ago
-                        if float(previous_price) >= pump_warning_price:
+
+                        # nếu pump lên quá 30% thì bỏ
+                        if float(one_minute_price[0][3]) >= (current_price + (current_price * 0.3)):
                             queue_message.append(
                                 f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
-                                f'Current price pump over {30}%, breaking session')
+                                f'Current price pump over {30}%, not buying')
                             sent_message(queue_message)
                             break
 
@@ -111,15 +113,17 @@ def buy():
                             session[announcement_coin].update({'total_fees': 0})
                             session[announcement_coin]['orders'] = list()
 
+
                         # initialize order object
                         if announcement_coin not in order:
+
+                            # Tăng giá mua lên 2% để nhanh khớp
+                            order_price = current_price + (current_price * 0.02)
                             # volume = globals.quantity - session[announcement_coin]['total_volume']
 
                             order[announcement_coin] = {}
-                            # order[announcement_coin]['_amount'] = f'{volume / float(price)}'
-                            # order[announcement_coin]['_left'] = f'{volume / float(price)}'
-                            order[announcement_coin]['_amount'] = f'{globals.max_volume / float(current_price)}'
-                            order[announcement_coin]['_left'] = f'{globals.max_volume / float(current_price)}'
+                            order[announcement_coin]['_amount'] = f'{globals.max_volume / order_price}'
+                            order[announcement_coin]['_left'] = f'{globals.max_volume / order_price}'
                             order[announcement_coin]['_fee'] = f'{0}'
                             order[announcement_coin]['_tp'] = f'{0}'
                             order[announcement_coin]['_sl'] = f'{0}'
@@ -130,39 +134,37 @@ def buy():
                                 else:
                                     order[announcement_coin]['_status'] = 'cancelled'
 
-                        # amount = float(order[announcement_coin]['_amount'])
-                        # previous_amount = float(order[announcement_coin]['_left'])
+                            # amount = float(order[announcement_coin]['_amount'])
+                            # previous_amount = float(order[announcement_coin]['_left'])
 
-                        # partial fill.
-                        # if previous_amount - amount != 0:
-                        #     amount = previous_amount
-                        try:
-                            if not globals.test_mode:
-                                # just in case...stop buying more than our config amount
-                                # assert amount * float(price) <= float(volume)
+                            # partial fill.
+                            # if previous_amount - amount != 0:
+                            #     amount = previous_amount
+                            try:
+                                if not globals.test_mode:
+                                    # just in case...stop buying more than our config amount
+                                    # assert amount * float(price) <= float(volume)
 
-                                # Tăng giá mua lên 10% để khớp đc order
-                                buy_price = (float(current_price) * 0.1)
+                                    queue_message.append(
+                                        f'{datetime.now().strftime("%H:%M:%S")} '
+                                        f'Order: {announcement_coin} {globals.pairing}  \n'
+                                        f'Price {order_price}$ \n'
+                                        f'Amount {globals.max_volume / order_price} \n'
+                                        f'Volume {globals.max_volume}$')
 
+                                    order[announcement_coin] = place_order(announcement_coin, globals.pairing,
+                                                                           globals.max_volume, 'buy', order_price)
+                                    order[announcement_coin] = order[announcement_coin].__dict__
+                                    order[announcement_coin].pop("local_vars_configuration")
+                                    order[announcement_coin]['_tp'] = globals.tp
+                                    order[announcement_coin]['_sl'] = globals.sl
+                                    order[announcement_coin]['_ttp'] = globals.ttp
+                                    order[announcement_coin]['_tsl'] = globals.tsl
+                            except Exception as e:
+                                logger.info('Main.py line 154 Exception')
                                 queue_message.append(
                                     f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
-                                    f'Place order | pairing={globals.pairing} | '
-                                    f'volume={globals.max_volume} | price={buy_price} ')
-
-                                order[announcement_coin] = place_order(announcement_coin, globals.pairing,
-                                                                       globals.max_volume, 'buy', buy_price)
-                                order[announcement_coin] = order[announcement_coin].__dict__
-                                order[announcement_coin].pop("local_vars_configuration")
-                                order[announcement_coin]['_tp'] = globals.tp
-                                order[announcement_coin]['_sl'] = globals.sl
-                                order[announcement_coin]['_ttp'] = globals.ttp
-                                order[announcement_coin]['_tsl'] = globals.tsl
-
-                        except Exception as e:
-                            logger.info('Main.py line 154 Exception')
-                            queue_message.append(
-                                f'{datetime.now().strftime("%H:%M:%S")} {announcement_coin} - '
-                                f'Place order exception {e}')
+                                    f'Place order exception {e}')
                         else:
                             # If order not exception and created
                             order_status = order[announcement_coin]['_status']

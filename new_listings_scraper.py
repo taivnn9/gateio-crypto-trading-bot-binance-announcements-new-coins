@@ -52,7 +52,6 @@ def get_announcement():
 
     latest_announcement = latest_announcement.json()
     logger.debug("Finished pulling announcement page")
-    logger.info(f"Kiểm tra thông báo list sàn của binance. {latest_announcement['code']}")
     return latest_announcement['data']['catalogs'][0]['articles'][0]['title']
 
 
@@ -91,7 +90,7 @@ def store_new_listing(listing):
     Only store a new listing if different from existing value
     """
     if listing and not listing == globals.latest_listing:
-        logger.info(f"Detect được coin mới {listing}")
+        logger.info(f"store_new_listing {listing}")
         globals.latest_listing = listing
         globals.buy_ready.set()
 
@@ -110,13 +109,15 @@ def search_and_update():
                 break
         try:
             latest_coin = get_last_coin()
+            # # TODO Hard code for test
+            # latest_coin = 'BTC'
             if latest_coin:
                 store_new_listing(latest_coin)
             if minute == 60:
-                logger.info(f"Kiểm tra thông báo list sàn của binance.  {str(sleep_time)} giây 1 lần (ở các thread độc lập)")
+                logger.info(f"search_and_update()  {str(sleep_time)} sec/times. spenate thread")
                 minute = 0
         except Exception as e:
-            logger.info(f'Kiểm tra thông báo list sàn của binance lỗi: {e}')
+            logger.info(f'search_and_update() exception: {e}')
             # logger.info(e)
     else:
         logger.info("while loop in search_and_update() has stopped.")
@@ -129,12 +130,11 @@ def get_all_currencies(single=False):
     """
     global supported_currencies
     while not globals.stop_threads:
-        logger.info("Lấy danh sách coin listed gate.io.. ")
+        logger.info("Getting git io currencies ")
         all_currencies = ast.literal_eval(str(spot_api.list_currencies()))
         currency_list = [currency['currency'] for currency in all_currencies]
         with open('currencies.json', 'w') as f:
             json.dump(currency_list, f, indent=4)
-            logger.info("Đã lưu danh sách coin listed vào file currencies.json. (Cập nhật danh sách 5 phút 1 lần.)")
         supported_currencies = currency_list
         if single:
             return supported_currencies
@@ -144,14 +144,14 @@ def get_all_currencies(single=False):
                 if globals.stop_threads:
                     break
     else:
-        logger.info("Đã dừng cập nhật danh sách coin list sàn gate.io.. ")
+        logger.info("supported_currencies stop_threads")
 
 
 def load_old_coins():
     if os.path.isfile('old_coins.json'):
         with open('old_coins.json') as json_file:
             data = json.load(json_file)
-            logger.debug("Đã lấy danh sách old_coins.json.")
+            logger.debug("loaded old_coins")
             return data
     else:
         return []
@@ -160,4 +160,4 @@ def load_old_coins():
 def store_old_coins(old_coin_list):
     with open('old_coins.json', 'w') as f:
         json.dump(old_coin_list, f, indent=2)
-        logger.debug('Đã lưu old_coin_list vào old_coins.json.')
+        logger.debug('stored old_coins')

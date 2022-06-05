@@ -77,7 +77,7 @@ def place_order(base, quote, volume, side, price):
     'DOT', 'USDT', 4000$, 'buy', 400$
     """
     try:
-        order = Order(amount=str(float(volume) / float(price)), price=price, side=side,
+        order = Order(amount=str(volume / float(price)), price=price, side=side,
                       currency_pair=f'{base}_{quote}', time_in_force='ioc')
         order = spot_api.create_order(order)
         t = order
